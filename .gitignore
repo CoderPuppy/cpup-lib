@@ -1,0 +1,5 @@
+.gradle/
+build/
+cpup-lib.iml
+cpup-lib.ipr
+cpup-lib.iws
