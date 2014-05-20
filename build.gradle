@@ -3,7 +3,9 @@ ext {
 		name: 'cpup-lib',
 		group: 'cpup.lib',
 		version: 'dev',
-		dependencies: []
+		dependencies: [
+		    'org.slf4j:slf4j-api:1.7.7'
+		]
 	]
 
 	versions = [
