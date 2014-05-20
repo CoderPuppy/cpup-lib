@@ -15,7 +15,7 @@ trait Module[I] {
 	def canLoad: CanLoad = CanLoad(true)
 	def load {
 		if(!canLoad.toBoolean) {
-			throw new RuntimeException("Attempt to load an unloadable module: " + canLoad.messages.mkString(", "))
+			throw new RuntimeException(s"Attempt to load an unloadable module: $fullName reason: " + canLoad.messages.mkString(", "))
 		}
 	}
 }
