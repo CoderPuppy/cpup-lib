@@ -16,15 +16,15 @@ class MultiModule[I](val impls: Module[_ <: I]*) extends Module[I] {
 
 			logger.info("Trying {}", impl.name)
 			for(msg <- canLoad.messages) {
-				logger.info("[{}] -- {}", impl.name: Any, msg: Any)
+				impl.logger.info("-- {}", msg: Any)
 			}
 			canLoad.toBoolean && (try {
 				impl.load
-				logger.info("[{}] Loaded", impl.name)
+				impl.logger.info("Loaded")
 				true
 			} catch {
 				case t: Throwable =>
-					logger.info("[{}] -- Threw while loading", t)
+					impl.logger.info("-- Threw while loading", t)
 					false
 			})
 		}).asInstanceOf[Option[Module[I]]]
