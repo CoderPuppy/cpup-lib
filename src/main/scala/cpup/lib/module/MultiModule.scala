@@ -28,5 +28,6 @@ class MultiModule[I](val impls: Module[_ <: I]*) extends Module[I] {
 					false
 			})
 		}).asInstanceOf[Option[Module[I]]]
+		logger.info("Loaded")
 	}
 }
