@@ -9,7 +9,7 @@ ext {
 	]
 
 	versions = [
-		scala: '2.10.2'
+		scala: '2.11.1'
 	]
 }
 
@@ -27,7 +27,9 @@ dependencies {
 }
 
 apply plugin: 'scala'
+dependencies.compile "org.scala-lang:scala-compiler:$versions.scala"
 dependencies.compile "org.scala-lang:scala-library:$versions.scala"
+dependencies.compile "org.scala-lang:scala-reflect:$versions.scala"
 
 apply plugin: 'maven'
 apply plugin: 'idea'
