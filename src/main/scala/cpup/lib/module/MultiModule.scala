@@ -6,7 +6,7 @@ class MultiModule[I](val impls: Module[_ <: I]*) extends Module[I] {
 
 	override def get = impl.get.get
 
-	override def canLoad = impls.foldLeft(super.canLoad)(_ && _.canLoad)
+	override def canLoad = impls.foldLeft(super.canLoad)(_ || _.canLoad)
 
 	override def load {
 		super.load
