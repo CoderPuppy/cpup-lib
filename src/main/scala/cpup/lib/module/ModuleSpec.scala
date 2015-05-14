@@ -1,8 +1,6 @@
 package cpup.lib.module
 
-import java.util.logging.LogManager
-
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.LoggerFactory
 
 case class ModuleSpec[T <: AnyRef](final val typ: ModuleType[T], private final val _parent: ModuleSpec[_ <: AnyRef]) {

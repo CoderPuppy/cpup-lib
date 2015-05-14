@@ -61,7 +61,14 @@ object ModuleLoader {
 				return Left(modulesBySpec(impl).inst.asInstanceOf[T])
 			} else {
 				if(impl.reasons.isEmpty) {
-					val inst = impl.typ.cla.getConstructor(classOf[Config], classOf[Logger]).newInstance(impl.config, impl.logger)
+					val inst = impl.typ.constructor.get.newInstance(impl.typ.constructor.get.getParameterTypes.map(c => {
+						if(c.isAssignableFrom(classOf[Logger]))
+							spec.logger
+						else if(c.isAssignableFrom(classOf[Config]))
+							spec.config
+						else
+							throw new RuntimeException(s"invalid parameter in constructor: ${c.getName}")
+					}): _*).asInstanceOf[T]
 					val module = new Module[T](impl, inst)
 					modulesByInst(inst) = module
 					modulesBySpec(impl) = module

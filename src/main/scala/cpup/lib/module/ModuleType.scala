@@ -10,23 +10,17 @@ case class ModuleType[T](implicit final val cla: Class[T]) {
 
 	lazy val id = Option(cla.getAnnotation(classOf[ModuleID])).map(_.id).getOrElse(cla.getName)
 	lazy val loadable = reasons.isEmpty
-	lazy val reasons = {
-		val reasons = cla.getAnnotations.toList.flatMap((a) => {
-			ModuleLoader.canLoadHandlers.get(a.annotationType).toList.flatMap(_.asInstanceOf[(Annotation) => List[String]](a))
-		})
-		if(reasons.isEmpty) {
-			try {
-				cla.getConstructor(classOf[Config], classOf[Logger])
-				List()
-			} catch {
-				case e: NoSuchMethodException => {
-					List(s"no valid constructor (constructors: ${
-						cla.getConstructors.map("(" + _.getParameterTypes.map(_.getSimpleName).mkString(", ") + ")").mkString(" | ")
-					})")
-				}
-			}
-		} else {
-			reasons
-		}
+	lazy val constructor = {
+		val constructors = cla.getConstructors.filter(_.getParameterTypes.forall(c => c.isAssignableFrom(classOf[Config]) || c.isAssignableFrom(classOf[Logger])))
+		if(constructors.isEmpty)
+			None
+		else
+			Some(constructors.head)
 	}
+	lazy val reasons = cla.getAnnotations.toList.flatMap((a) => {
+		ModuleLoader.canLoadHandlers.get(a.annotationType).toList.flatMap(_.asInstanceOf[(Annotation) => List[String]](a))
+	}) ++ (constructor match {
+		case Some(c) => List()
+		case None => List(s"no valid constructor, options: ${cla.getConstructors.map(c => s"(${c.getParameterTypes.map(_.getName).mkString(", ")})").mkString(" | ")}")
+	})
 }
