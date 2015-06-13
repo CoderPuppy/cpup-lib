@@ -20,4 +20,14 @@ object Util {
 		}
 		ancestors.toList
 	}
+
+	def wrap[N](n: N, min: N, max: N)(implicit numeric: Numeric[N]): N = {
+		val range = numeric.plus(numeric.minus(max, min), numeric.one)
+		if(numeric.gt(n, max))
+			wrap(numeric.minus(n, range), min, max)
+		else if(numeric.lt(n, min))
+			wrap(numeric.plus(n, range), min, max)
+		else
+			n
+	}
 }
