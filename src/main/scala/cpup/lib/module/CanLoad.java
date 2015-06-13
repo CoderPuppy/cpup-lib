@@ -11,4 +11,16 @@ public abstract class CanLoad {
 	public @interface ClassAvailable {
 		Class clazz();
 	}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target({ElementType.TYPE})
+	public @interface ModuleTypeAvailable {
+		Class moduleType();
+	}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target({ElementType.TYPE})
+	public @interface ModuleProvided {
+		Class moduleType();
+	}
 }
