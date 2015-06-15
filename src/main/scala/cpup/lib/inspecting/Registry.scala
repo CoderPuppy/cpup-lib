@@ -77,7 +77,7 @@ class Registry {
 
 	def get(typ: JStr, id: Data*) = {
 		_insts.get((typ, id.toList)) match {
-			case Some(inst) => Left(inspect(inst._1, new Object, inst._2, ru.typeOf[Object]))
+			case Some(inst) => Left(inspect(inst._1, new Context, inst._2))
 			case None => {
 				val args = id.map(_.unpack)
 				_getter.get(typ).flatMap(fns => {
@@ -90,26 +90,26 @@ class Registry {
 		}
 	}
 
-	protected val _inspectors = mutable.Map[(ru.Type, ru.Type), mutable.Set[(Any, Any) => Option[Data.Table]]]()
+	protected val _inspectors = mutable.Map[ru.Type, mutable.Set[(Any, Any) => Option[Data.Table]]]()
 
-	def register[O, C](fn: (O, C) => Option[Data.Table], oTpe: ru.Type, cTpe: ru.Type) {
-		_inspectors.getOrElseUpdate((oTpe, cTpe), mutable.Set[(Any, Any) => Option[Data.Table]]()) += fn.asInstanceOf[(Any, Any) => Option[Data.Table]]
+	def register[O](fn: (O, Context) => Option[Data.Table], tpe: ru.Type) {
+		_inspectors.getOrElseUpdate(tpe, mutable.Set[(Any, Any) => Option[Data.Table]]()) += fn.asInstanceOf[(Any, Any) => Option[Data.Table]]
 	}
 
-	def register [O, C](fn: (O, C) => Option[Data.Table])(implicit oTT: ru.TypeTag[O], cTT: ru.TypeTag[C]): Unit = register[O, C](fn, oTT.tpe, cTT.tpe)
+	def register [O](fn: (O, Context) => Option[Data.Table])(implicit tt: ru.TypeTag[O]): Unit = register[O](fn, tt.tpe)
 
-	def inspect[O, C](obj: O, ctx: C, oTpe: ru.Type, cTpe: ru.Type) = {
+	def inspect[O](obj: O, ctx: Context, tpe: ru.Type) = {
 		var tbl = Data.Table()
 		for {
-			((oTpe_, cTpe_), fns) <- _inspectors if oTpe <:< oTpe_ && cTpe <:< cTpe_
+			(tpe_, fns) <- _inspectors if tpe <:< tpe_
 			fn <- fns
 			res <- fn(obj, ctx)
 		} tbl ++= res
 		tbl
 	}
 
-	def inspect [O, C](obj: O, ctx: C)(implicit oTT: ru.TypeTag[O], cTT: ru.TypeTag[C]): Data.Table = inspect[O, C](obj, ctx, oTT.tpe, cTT.tpe)
-	def inspect_[O, C](obj: O, ctx: C): Data.Table = inspect[O, C](obj, ctx, ReflectUtil.tpe(obj), ReflectUtil.tpe(ctx))
+	def inspect [O](obj: O, ctx: Context)(implicit tt: ru.TypeTag[O]): Data.Table = inspect[O](obj, ctx, tt.tpe)
+	def inspect_[O, C](obj: O, ctx: Context): Data.Table = inspect[O](obj, ctx, ReflectUtil.tpe(obj))
 
 	trait IDed {
 		def typ: String
