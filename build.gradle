@@ -4,13 +4,13 @@ ext {
 		group: 'cpup.lib',
 		version: 'dev',
 		dependencies: [
-			'org.slf4j:slf4j-api:1.7.12',
+			'org.slf4j:slf4j-api:1.7.21',
 			'com.typesafe:config:1.2.1'
 		]
 	]
 
 	versions = [
-		scala: '2.11.1'
+		scala: '2.11.7'
 	]
 }
 

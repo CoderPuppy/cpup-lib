@@ -17,8 +17,8 @@ trait EventBus {
 		}
 	}
 
-	def register [T](obj: T)(implicit tt: ru.TypeTag[T]) { register[T](obj,          tt.tpe     ) }
-	def register_[T](obj: T)                             { register[T](obj, ReflectUtil.tpe(obj)) }
+	def register [T](obj: T)(implicit tt: ru.TypeTag[T]) { register[T](obj,          tt.tpe              ) }
+	def register_[T](obj: T)                             { register[T](obj, ReflectUtil.tpe(obj.getClass)) }
 
 	def unregister[T](obj: T, tpe: ru.Type) {
 		for((m, tpe, prior) <- EventBus.handlers[T](obj, tpe)) {
@@ -26,8 +26,8 @@ trait EventBus {
 		}
 	}
 
-	def unregister [T](obj: T)(implicit tt: ru.TypeTag[T]) { unregister[T](obj,          tt.tpe     ) }
-	def unregister_[T](obj: T)                             { unregister[T](obj, ReflectUtil.tpe(obj)) }
+	def unregister [T](obj: T)(implicit tt: ru.TypeTag[T]) { unregister[T](obj,          tt.tpe              ) }
+	def unregister_[T](obj: T)                             { unregister[T](obj, ReflectUtil.tpe(obj.getClass)) }
 
 	def emit[T](e: T, tpe: ru.Type) {
 		try {
@@ -43,8 +43,8 @@ trait EventBus {
 		}
 	}
 
-	def emit [T](obj: T)(implicit tt: ru.TypeTag[T]) { emit[T](obj,          tt.tpe     ) }
-	def emit_[T](obj: T)                             { emit[T](obj, ReflectUtil.tpe(obj)) }
+	def emit [T](obj: T)(implicit tt: ru.TypeTag[T]) { emit[T](obj,          tt.tpe              ) }
+	def emit_[T](obj: T)                             { emit[T](obj, ReflectUtil.tpe(obj.getClass)) }
 
 	@EventHandler
 	def forward(e: Any)(tpe: ru.Type) {

@@ -2,7 +2,7 @@ package cpup.lib.conversion
 
 import scala.language.implicitConversions
 
-trait Convert[F, T] {
+trait Convert[-F, +T] {
 	def convert(from: F): T
 }
 
@@ -15,5 +15,12 @@ object Convert {
 	}
 	implicit def optionify[T]: Convert[T, Option[T]] = new Convert[T, Option[T]] {
 		override def convert(from: T): Option[T] = Some(from)
+	}
+	implicit def distributiveOpt[F, T](implicit c: Convert[F, T]): Convert[Option[F], Option[T]] = new Convert[Option[F], Option[T]] {
+		override def convert(from: Option[F]) = from.map(c.convert)
+	}
+
+	implicit object Str2Sym extends Convert[String, Symbol] {
+		override def convert(from: String) = Symbol(from)
 	}
 }

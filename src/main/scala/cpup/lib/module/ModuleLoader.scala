@@ -3,6 +3,7 @@ package cpup.lib.module
 import java.lang.annotation.Annotation
 
 import scala.collection.mutable.ListBuffer
+import scala.language.existentials
 
 import com.typesafe.config.Config
 import org.slf4j.Logger
@@ -110,6 +111,7 @@ object ModuleLoader {
 				spec.logger.info("using {}", impl.id)
 				return Left(modulesBySpec(impl).inst.asInstanceOf[T])
 			} else {
+				spec.logger.info("trying {}", impl.id)
 				if(impl.reasons.isEmpty) {
 					val inst = impl.constructor.get.newInstance(impl.constructor.get.getParameterTypes.map(c => {
 						if(c.isAssignableFrom(classOf[Logger]))
@@ -127,7 +129,6 @@ object ModuleLoader {
 					modulesByInst(inst) = module
 					impl.parents.tail.takeWhile(_.typ.multi.isDefined).foreach(modulesBySpec(_) = module)
 					modulesBySpec(impl) = module
-					impl.logger.info("loading for {}", spec.id)
 					spec.logger.info("using {}", impl.id)
 					return Left(inst)
 				} else {

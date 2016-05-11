@@ -58,12 +58,14 @@ class Registry {
 		this
 	}
 	def register [T <: AnyRef](inst: T, typ: JStr, id: Data*)(implicit tt: ru.TypeTag[T]): Registry = register[T](inst, tt.tpe, typ, id: _*)
-	def register_[T <: AnyRef](inst: T, typ: JStr, id: Data*): Registry = register[T](inst, ReflectUtil.tpe(inst), typ, id: _*)
+	def register_[T <: AnyRef](inst: T, typ: JStr, id: Data*): Registry = register[T](inst, ReflectUtil.tpe(inst.getClass), typ, id: _*)
 
 	def unregister(typ: JStr, id: Data*) = {
 		_insts.remove((typ, id.toList))
 		this
 	}
+
+	def inst(typ: JStr, id: Data*): Option[Any] = _insts.get((typ, id.toList))
 
 	def register(typ: JStr, fn: Seq[Any] => Option[Data]) = {
 		_getter.addBinding(typ, fn)
@@ -109,16 +111,54 @@ class Registry {
 	}
 
 	def inspect [O](obj: O, ctx: Context)(implicit tt: ru.TypeTag[O]): Data.Table = inspect[O](obj, ctx, tt.tpe)
-	def inspect_[O, C](obj: O, ctx: Context): Data.Table = inspect[O](obj, ctx, ReflectUtil.tpe(obj))
+	def inspect_[O, C](obj: O, ctx: Context): Data.Table = inspect[O](obj, ctx, ReflectUtil.tpe(obj.getClass))
 
+	protected val _ided = new mutable.Map[(JStr, UUID), AnyRef] {
+		val map = mutable.Map.empty[(JStr, UUID), WeakReference[AnyRef]]
+		override def get(key: (JStr, UUID)) = map.get(key) match {
+			case Some(v) => v.get match {
+				case v: Some[_] => v
+				case None => {
+					map -= key
+					None
+				}
+			}
+			case None => None
+		}
+
+		override def +=(kv: ((JStr, UUID), AnyRef)): this.type = {
+			map += kv._1 -> new WeakReference[AnyRef](kv._2)
+			this
+		}
+
+		override def -=(key: (JStr, UUID)): this.type = {
+			map -= key
+			this
+		}
+
+		override def iterator = map.iterator.flatMap { kv => kv._2.get match {
+			case Some(v) => Some((kv._1, v))
+			case None => {
+				map -= kv._1
+				None
+			}
+		} }
+	}
+	def ided(typ: String, uuid: UUID) = _ided.get((typ, uuid))
 	trait IDed {
 		def typ: String
 
 		var uuid = UUID.randomUUID
 		_register
 
-		protected[inspecting] def _register = register_(this, typ, Data.String(uuid.toString))
-		protected[inspecting] def _unregister = unregister(typ, Data.String(uuid.toString))
+		protected[inspecting] def _register = {
+			register_(this, typ, Data.String(uuid.toString))
+			_ided((typ, uuid)) = this
+		}
+		protected[inspecting] def _unregister = {
+			unregister(typ, Data.String(uuid.toString))
+			_ided.remove((typ, uuid))
+		}
 
 		def changeUUID(newUUID: UUID) {
 			_unregister
@@ -157,7 +197,7 @@ class Registry {
 
 			override def unpack = Map(kvs.map(kv => (kv._1, kv._2.unpack)): _*)
 
-			override def toString = s"{ ${kvs.map(kv => s"${kv._1} = ${kv._2}; ").mkString}}"
+			override def toString = s"{ #${kvs.size}\n${kvs.map { kv => s"${kv._1} = ${kv._2}\n" }.mkString}}"
 
 			override def +[B1 >: Data](kv: (JStr, B1)): Map[JStr, B1] = kv._2 match {
 				case v: Data => this + (kv._1 -> v)
@@ -176,7 +216,7 @@ class Registry {
 			}): _*))
 			override def unpack = els.map(_.unpack)
 
-			override def toString = s"[ ${els.map(_.toString + "; ").mkString}]"
+			override def toString = s"[ #${els.size}\n${els.map(_.toString + "\n").mkString}]"
 
 			override def apply(idx: SInt) = els(idx)
 			override def length = els.length

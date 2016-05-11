@@ -1,25 +1,20 @@
 package cpup.lib.arguments
 
+import scala.reflect.runtime.{universe => ru}
+
 import cpup.lib.arguments.parsing.ArgData
 import cpup.lib.conversion.Convert
 
+case class Arg[T](name: String, usage: String = "", default: Option[T] = None, parse: Arg.Parse[T])(implicit val tt: ru.TypeTag[T]) {
+	if(!Arg.validFlagName(name)) throw new InvalidFlagNameException(s"invalid flag name: $name")
+}
+
 object Arg {
+	case class Var[T](name: String, usage: String = "", necessary: Boolean = false, parse: Arg.Parse[T])(implicit val tt: ru.TypeTag[T]) extends SingleName
+	case class Opt[T](names: Set[String], usage: String = "", default: T, typ: Option[Int] = None, parse: Arg.Parse[T])(implicit val tt: ru.TypeTag[T])
+	case class Flag(names: Set[String], usage: String = "", default: Boolean = false, typ: Option[Int] = None)
+
 	def validFlagName(str: String) = !(str.startsWith("+") || str.startsWith("-") || str.contains("="))
 
-	trait Parse[T] { def parse(arg: ArgData*): Either[T, String] }
-	implicit def transitiveParse[F, T](implicit p: Parse[F], c: Convert[F, T]): Parse[T] = new Parse[T] {
-		override def parse(arg: ArgData*) = p.parse(arg: _*).left.map(c.convert)
-	}
-
-	implicit object StringParse extends Parse[String] {
-		override def parse(arg: ArgData*) = Left(arg.mkString(" "))
-	}
-
-	trait PrettyPrint[T] { def prettyPrint(v: T): String }
-	implicit def transitivePrettyPrint[F, T](implicit c: Convert[F, T], p: PrettyPrint[T]): PrettyPrint[F] = new PrettyPrint[F] {
-		override def prettyPrint(v: F) = p.prettyPrint(c.convert(v))
-	}
-
-	implicit object  StringPrettyPrint extends PrettyPrint[String] { override def prettyPrint(v: String) = v }
-	implicit object DefaultPrettyPrint extends PrettyPrint[   Any] { override def prettyPrint(v:    Any) = v.toString }
+	type Parse[T] = (ArgData*) => Either[T, String]
 }

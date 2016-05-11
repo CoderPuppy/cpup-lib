@@ -1,12 +1,21 @@
 package cpup.lib.module
 
 import java.lang.annotation.Annotation
+import scala.language.existentials
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.{Logger, LoggerFactory}
 
 case class ModuleSpec[T <: AnyRef](final val typ: ModuleType[T], private final val _parent: ModuleSpec[_ <: AnyRef], private final val _provide: Boolean = false) {
 	override def toString = s"#ModuleSpec<$id>"
+
+	override def hashCode = typ.hashCode * (if(parent eq this) 1 else parent.hashCode)
+	override def equals(o: scala.Any) = o match {
+		case o: ModuleSpec[_] => {
+			o.typ == typ && (((o.parent eq o) && (parent eq this)) || o.parent == parent)
+		}
+		case _ => false
+	}
 
 	private lazy val _id: String = s"${parent.id}/${typ.id}"
 	def id = _id
@@ -26,7 +35,10 @@ case class ModuleSpec[T <: AnyRef](final val typ: ModuleType[T], private final v
 	def logger = _logger
 
 	private lazy val _constructor = typ.cla.getConstructors.find(_.getParameterTypes.forall(c => {
-		c.isAssignableFrom(classOf[Config]) || c.isAssignableFrom(classOf[Logger]) || ModuleLoader.providedModule(this, ModuleLoader.moduleType(c.asInstanceOf[Class[_ <: AnyRef]]))._1.isDefined
+//		println(ModuleLoader.providedModule(this, ModuleLoader.moduleType(c.asInstanceOf[Class[_ <: AnyRef]])))
+		c.isAssignableFrom(classOf[Config]) ||
+			c.isAssignableFrom(classOf[Logger]) ||
+			ModuleLoader.providedModule(this, ModuleLoader.moduleType(c.asInstanceOf[Class[_ <: AnyRef]]))._1.isDefined
 	}))
 	def constructor = _constructor
 
