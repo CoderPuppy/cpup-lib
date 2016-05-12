@@ -19,13 +19,9 @@ object Argument {
 					case None =>
 					case _ => return None
 				}
-				val arg = a.data.toList match {
-					case List(ArgData.Single(arg)) => arg
+				a.data.toList match {
+					case List(ArgData.Single(arg)) if names.contains(arg) =>
 					case _ => return None
-				}
-				val name = names.find(arg.startsWith) match {
-					case Some(name) => name
-					case None => return None
 				}
 				Some(a.typ.contains("+"))
 			}
@@ -42,21 +38,26 @@ object Argument {
 					case ArgData.Single(arg) :: tl => (arg, tl)
 					case _ => return None
 				}
+				// Why did I do this?
+				// this makes "-f=[[L]]" not work
 				if(!hasData && tl.nonEmpty) return None
-				val name = (if(hasData) names.find(name => arg.startsWith(name + "=")) else names.find(arg.startsWith)) match {
-					case Some(name) => name
-					case None => return None
-				}
-				Some(if(hasData) {
-					val rem = arg.substring(name.length + 1)
-					Some(if(rem.isEmpty) {
-						tl
-					} else {
-						ArgData.Single(rem) :: tl
-					})
+				if(hasData) {
+					names.find(name => arg.startsWith(name + "=")).map { name =>
+						val rem = arg.substring(name.length + 1)
+						Some(if(rem.isEmpty) {
+							tl
+						} else {
+							ArgData.Single(rem) :: tl
+						})
+					}
 				} else {
-					None
-				})
+					// but here already makes it not work
+					if(names.contains(arg)) {
+						Some(None)
+					} else {
+						None
+					}
+				}
 			}
 		}
 	}

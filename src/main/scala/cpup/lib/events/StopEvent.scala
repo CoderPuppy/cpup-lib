@@ -1,3 +1,3 @@
 package cpup.lib.events
 
-object StopEvent extends Throwable
+class StopEvent extends Throwable

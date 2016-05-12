@@ -9,11 +9,11 @@ import scala.reflect.runtime.{universe => ru}
 import cpup.lib.reflect.ReflectUtil
 
 trait EventBus {
-	private val handlers = new mutable.HashMap[ru.Type, mutable.Set[(ru.MethodMirror, Int)]]
+	private val handlers = new mutable.HashMap[ru.Type, mutable.Map[ru.MethodSymbol, (ru.MethodMirror, Int)]]
 
 	def register[T](obj: T, tpe: ru.Type) {
 		for((m, tpe, prior) <- EventBus.handlers[T](obj, tpe)) {
-			handlers.getOrElseUpdate(tpe, new mutable.HashSet[(ru.MethodMirror, Int)]) += ((m, prior))
+			handlers.getOrElseUpdate(tpe, mutable.HashMap.empty)(m.symbol) = (m, prior)
 		}
 	}
 
@@ -21,8 +21,13 @@ trait EventBus {
 	def register_[T](obj: T)                             { register[T](obj, ReflectUtil.tpe(obj.getClass)) }
 
 	def unregister[T](obj: T, tpe: ru.Type) {
-		for((m, tpe, prior) <- EventBus.handlers[T](obj, tpe)) {
-			handlers.get(tpe).foreach(_ -= ((m, prior)))
+		for {
+			(m, tpe, _) <- EventBus.handlers[T](tpe)
+			_handlers <- handlers.get(tpe)
+		} {
+			_handlers.remove(m)
+			if(_handlers.isEmpty)
+				handlers.remove(tpe)
 		}
 	}
 
@@ -31,15 +36,15 @@ trait EventBus {
 
 	def emit[T](e: T, tpe: ru.Type) {
 		try {
-			for((handler, anno) <- handlers.filter(tpe <:< _._1).flatMap(_._2).toList.sortBy(-_._2)) {
+			for((handler, anno) <- handlers.filter(tpe <:< _._1).flatMap(_._2).values.toList.sortBy(-_._2)) {
 				if(handler.symbol.paramLists.length == 2)
 					handler.apply(e, tpe)
 				else
 					handler.apply(e)
 			}
 		} catch {
-			case StopEvent =>
-			case ex: InvocationTargetException if ex.getCause == StopEvent =>
+			case _: StopEvent =>
+			case ex: InvocationTargetException if ex.getCause.isInstanceOf[StopEvent] =>
 		}
 	}
 
@@ -65,7 +70,7 @@ object EventBus {
 		})
 	}
 
-	def handlers[T](tpe: ru.Type) = {
+	def handlers[T](tpe: ru.Type): List[(ru.MethodSymbol, ru.Type, Int)] = {
 		val ehTpe = ru.typeOf[EventHandler]
 		(for {
 			member <- tpe.members if member.isMethod
@@ -80,7 +85,7 @@ object EventBus {
 				.map(_.rhs)
 				.flatMap { case t: ru.Literal => Some(t.value.value) case _ => None }
 				.flatMap { case n: Int => Some(n) case _ => None }
-				.find(c => true)
+				.headOption
 				.getOrElse(0)
 		)).toList
 	}
