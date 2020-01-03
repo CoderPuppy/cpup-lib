@@ -1,7 +1,7 @@
 package cpup.lib.arguments.parsing
 
 trait Argument {
-
+	def data: Seq[ArgData]
 }
 
 object Argument {

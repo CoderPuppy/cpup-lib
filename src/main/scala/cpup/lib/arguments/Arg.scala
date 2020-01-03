@@ -16,12 +16,35 @@ object Arg {
 		def names = Set(name)
 		def parse: Arg.Parse[T]
 	}
-	case class Single[T](name: String, desc: String = "", default: Option[T] = None, parse: Arg.Parse[T])(implicit val tt: ru.TypeTag[T]) extends Positional[T]
-	case class Var[T](name: String, desc: String = "", min: Int = 0, parse: Arg.Parse[T])(implicit val tt: ru.TypeTag[T]) extends Positional[T]
+	case class Single[T](
+		name: String,
+		desc: String = "",
+		default: Option[T] = None,
+		parse: Arg.Parse[T]
+	)(implicit val tt: ru.TypeTag[T]) extends Positional[T]
+	case class Var[T](
+		name: String,
+		desc: String = "",
+		min: Int = 0,
+		max: Option[Int] = None,
+		raw: Boolean = false,
+		parse: Arg.Parse[T]
+	)(implicit val tt: ru.TypeTag[T]) extends Positional[T]
 
-	case class Opt[T](names: Set[String], desc: String = "", default: T, parse: Arg.Parse[T], typ: Option[Int] = None)(implicit val tt: ru.TypeTag[T]) extends Arg[T]
-	case class Flag(names: Set[String], desc: String = "", default: Boolean = false, typ: Option[Int] = None) extends Arg[Boolean] {
-		override def tt = implicitly
+	case class Opt[T](
+		names: Set[String],
+		desc: String = "",
+		default: T,
+		parse: Arg.Parse[T],
+		typ: Option[Int] = None
+	)(implicit val tt: ru.TypeTag[T]) extends Arg[T]
+	case class Flag(
+		names: Set[String],
+		desc: String = "",
+		default: Boolean = false,
+		typ: Option[Int] = None
+	) extends Arg[Boolean] {
+		override def tt = implicitly[ru.TypeTag[Boolean]]
 	}
 
 	def validFlagName(str: String) = !(str.startsWith("+") || str.startsWith("-") || str.contains("="))
